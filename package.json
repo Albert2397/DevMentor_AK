@@ -10,11 +10,35 @@
     "build": "npm run build -w @devmentor/app",
     "start": "npm run start -w @devmentor/app --",
     "lint": "eslint",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run --project core --project db --project ui --project app",
+    "test:int": "vitest run --project db-int",
+    "test:watch": "vitest --project core --project db --project ui --project app",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "npm run db:migrate -w @devmentor/db",
+    "db:migration:create": "npm run db:migration:create -w @devmentor/db --",
+    "db:migration:check": "npm run db:migration:check -w @devmentor/db",
+    "db:create": "npm run db:create -w @devmentor/db",
+    "auth:migrate": "npm run auth:migrate -w @devmentor/app",
+    "prepare": "husky",
+    "test:coverage": "vitest run --project core --project db --project ui --project app --coverage",
+    "test:integration": "vitest run --project app-int",
+    "app:ephemeral": "npm run app:ephemeral -w @devmentor/app"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
-    "typescript": "^5"
+    "eslint-config-next": "^16.4.6",
+    "husky": "^9.1.7",
+    "jsdom": "^31.0.1",
+    "lint-staged": "^17.6.1",
+    "prettier": "^3.10.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.0"
   }
 }

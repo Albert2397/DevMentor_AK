@@ -1,15 +1,29 @@
 import "server-only";
 
 import { cache } from "react";
-import { APP_NAME, createDiContainer, registerCore, type AwilixContainer, type CoreCradle } from "@devmentor/core";
+import {
+  APP_NAME,
+  createDiContainer,
+  registerCore,
+  type AwilixContainer,
+  type CoreCradle,
+} from "@devmentor/core";
+import { registerDb, type DbCradle } from "@devmentor/db";
 
-export type AppCradle = CoreCradle;
+import { env } from "@/env";
+
+export type AppCradle = CoreCradle & DbCradle;
 
 function buildContainer(): AwilixContainer<AppCradle> {
   const container = createDiContainer<AppCradle>();
   registerCore(container, {
     name: APP_NAME,
     description: "Your Next.js app will show up here.",
+  });
+  registerDb(container, {
+    clientUrl: env.DATABASE_URL,
+    poolMax: env.DATABASE_POOL_MAX,
+    debug: env.LOG_LEVEL === "debug" || env.LOG_LEVEL === "trace",
   });
   return container;
 }

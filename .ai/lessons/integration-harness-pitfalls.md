@@ -1,0 +1,5 @@
+# Testy integracyjne aplikacji: strumieniowanie i procesy potomne
+
+1. **Treść z `<Suspense>` pojawia się po nawigacji.** Przy Cache Components `wait --url` kończy się, zanim formularz profilu zostanie dostarczony strumieniem. Odczyt pola od razu po przekierowaniu daje `No form control labelled …`. Reguła: przed odczytem czekaj na konkretny element (`AgentBrowser.valueOf` robi `wait --fn` na kontrolce) albo na tekst (`waitForText`), nie na URL.
+2. **`npx next start` uruchamia `next-server` jako wnuka.** `kill <pid npx>` zostawia działający serwer z otwartą pulą do bazy. Harness startuje go z `detached: true` i zabija całą grupę: `process.kill(-pid, "SIGTERM")`. To samo dotyczy `app:ephemeral` uruchomionego w tle przez `npm run`: `npm`/`npx` nie przekazują SIGINT. Zatrzymuj wtedy proces `tsx` albo grupę (`kill -INT -- -<pgid>`). Ctrl+C w terminalu działa, bo sygnał dostaje cała grupa pierwszego planu.
+3. **Bez Dockera** Testcontainers rzuca `Could not find a working container runtime strategy`. Ustaw `INTEGRATION_DATABASE_URL`, a harness utworzy tymczasową bazę `devmentor_it_<hex>` i usunie ją przez `drop database … with (force)`.

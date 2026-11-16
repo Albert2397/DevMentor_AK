@@ -1,7 +1,8 @@
 # DevMentor — tech stack, standardy inżynieryjne i wzorce projektowe
 
 Data: 2026-11-16
-Status: proposed (wymaga akceptacji decyzji z sekcji „Otwarte pytania”)
+Status: done (2026-11-16), wdrożona według sekcji 13
+Dziennik: [.ai/runs/2026-11-16-devmentor-engineering-standards.md](../../runs/2026-11-16-devmentor-engineering-standards.md)
 Powiązane: [2026-11-16-devmentor-monorepo.md](2026-11-16-devmentor-monorepo.md) (plan migracji, fazy 1–2 ukończone)
 
 ## 1. Kontekst i założenia
@@ -40,7 +41,7 @@ Funkcje produktu nie zostały jeszcze opisane. Przyjęte założenia robocze (do
 | Telemetria | `instrumentation.ts` + OpenTelemetry (opcjonalnie) | | Włączyć przy pierwszym wdrożeniu produkcyjnym. |
 | Testy jednostkowe/integracyjne | Vitest + Testing Library + jsdom | 5.x / 16.x | |
 | Testy E2E | Playwright | 1.65.x | Na `next build` + `next start`. |
-| Testy bazy | Prawdziwy PostgreSQL (baza `_test`), w CI `@testcontainers/postgresql` | 12.x | Bez mocków ORM. |
+| Testy bazy | Prawdziwy PostgreSQL (baza `_test`), w CI kontener usługi GitHub Actions (`postgres:17`) | | Bez mocków ORM. Testcontainers niepotrzebne (decyzja z wdrożenia). |
 | Formatowanie | Prettier | 3.x | |
 | Lint | ESLint 9 flat config + `eslint-config-next` + `typescript-eslint` | 8.73+ | Granice pakietów już wymuszone. |
 | Git hooks | husky + lint-staged | 9.x / 17.x | pre-commit: format i lint zmienionych plików. |
@@ -124,7 +125,7 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
 ### 4.5 Konfiguracja
 
 - `typedRoutes: true` (stabilne w 16).
-- `serverExternalPackages` dla `@mikro-orm/sql`, `@mikro-orm/postgresql`, `@mikro-orm/migrations` (wbudowana lista Next obejmuje tylko pakiety MikroORM 6). Do zweryfikowania buildem w fazie 3.
+- `serverExternalPackages` nie jest potrzebne dla MikroORM 7. Zweryfikowane 2026-11-16: build i zapytanie do bazy w `next start` działają z tym wpisem i bez niego. Dodawać tylko wtedy, gdy build konkretnej biblioteki zawiedzie.
 - Zmienne środowiskowe: jeden moduł `packages/app/src/env.ts` (`@t3-oss/env-nextjs`). `process.env` czyta się tylko tam.
   - `NEXT_PUBLIC_*` są wstawiane w czasie builda, więc nie trzymamy w nich niczego, co zmienia się między środowiskami.
   - Pakiety dostają konfigurację przez `register<Pakiet>(container, config)`, a nie z `process.env`.
@@ -152,7 +153,7 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
   - `clientUrl` pochodzi z konfiguracji przekazanej do `registerDb` (w CLI z `DATABASE_URL`).
   - `extensions: [Migrator]` są rejestrowane jawnie.
   - Pula: `pool: { min: 0, max: 10, idleTimeoutMillis: 30_000 }`, nadpisywalna z env.
-- **Cykl życia:** jedna instancja `MikroORM` na proces, trzymana w `globalThis` (HMR i osobne warstwy bundla Next). Rejestracja w kontenerze:
+- **Cykl życia:** jedna instancja `MikroORM` na moduł, czyli na warstwę bundla Next. Nie w `globalThis`, bo warstwy mają osobne klasy encji (lekcja `mikroorm-orm-per-bundle-layer`, 2026-11-16). Pula z `min: 0` i timeoutem bezczynności zwalnia nieużywane połączenia. Rejestracja w kontenerze:
   - `orm`: `asValue`, singleton;
   - `em`: `asFunction(({ orm }) => orm.em.fork()).scoped()`;
   - repozytoria: `scoped`.
@@ -170,7 +171,7 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
 - **Tailwind v4:** konfiguracja w CSS. Tokeny shadcn (OKLCH, `:root`/`.dark`, `@theme inline`) leżą w `packages/ui/src/styles/globals.css`. Każdy arkusz deklaruje `@source` dla `packages/ui/src`, bo pakiet jest symlinkiem w `node_modules`, którego Tailwind nie skanuje. Klasy muszą być pełnymi stringami (bez `bg-${color}`). Do warunkowych klas służy `cn()`.
 - **Dwa root layouty przez grupy tras:**
   - `app/(frontend)/layout.tsx` ma własny arkusz z Tailwindem i własnym `@theme` marki;
-  - `app/(backend)/backend/layout.tsx` importuje `@devmentor/ui/globals.css` i `ThemeProvider` (`next-themes`, `attribute="class"`).
+  - `app/(backend)/layout.tsx` (root layout musi leżeć w grupie, nie głębiej) z `backend.css` importującym `@devmentor/ui/globals.css` i `ThemeProvider` (`next-themes`, `attribute="class"`). Do grupy należą `/sign-in`, `/sign-up`, `/account` i `/backend`.
   - Oba arkusze z `source(none)` i jawnymi `@source`, żeby tokeny się nie mieszały.
   - Bez głównego `app/layout.tsx`, a `/` jest zdefiniowane w `(frontend)`. Przejście między frontendem a panelem przeładowuje całą stronę (Next `route-groups.md`). To akceptowalne, bo są to osobne obszary.
 - **shadcn w monorepo:**
@@ -221,6 +222,8 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
 
 ## 8. Testy
 
+> **Zmienione 2026-11-16** przez [2026-11-16-ci-testing.md](../2026-11-16-ci-testing.md). Obowiązuje 100% pokrycia testami jednostkowymi na plik. Playwright E2E zastąpiły testy integracyjne aplikacji na Testcontainers i `agent-browser`. Adaptery ORM w testach jednostkowych mogą używać fake `EntityManager` do sprawdzenia delegacji. Poniższa tabela opisuje stan sprzed tej zmiany.
+
 | Poziom | Narzędzie | Zakres | Gdzie |
 | --- | --- | --- | --- |
 | Jednostkowe | Vitest (`node`) | serwisy i reguły w `core` z fake'ami portów, autoryzacja, schematy | `packages/core/src/**/*.test.ts` |
@@ -230,11 +233,13 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
 
 - Jedna konfiguracja `vitest.config.ts` w katalogu głównym z `projects` dla pakietów. Skrypty `npm test` (unit + komponenty), `npm run test:int`, `npm run test:e2e`.
 - Asynchronicznych Server Components Vitest nie obsługuje, więc testuje się je E2E, a logikę wyciąga do serwisów.
-- Zakaz mockowania ORM. Repozytoria testuje się na bazie `<db>_test` (`orm.schema.refresh()` w global setup), a w CI na Testcontainers.
+- Zakaz mockowania ORM. Repozytoria testuje się na bazie `<db>_test` (migracje w `createMigratedTestOrm()`, `orm.schema.clear()` przed każdym testem). E2E też używa bazy `_test`.
 - Testy w kodzie z błędem: najpierw test, który go odtwarza, potem poprawka.
 - Nie ustalamy procentowego progu pokrycia. Wymóg: każdy publiczny przypadek użycia i każda reguła autoryzacji mają test.
 
 ## 9. Proces inżynieryjny
+
+> **CI zmienione 2026-11-16:** cztery równoległe joby (`lint`, `unit`, `build`, `integration`), szczegóły w [2026-11-16-ci-testing.md](../2026-11-16-ci-testing.md).
 
 - **SDD:**
   1. specyfikacja w `.ai/specs/` (cel, zakres, decyzje, kryteria akceptacji);
@@ -251,7 +256,7 @@ Decyzja do podjęcia na starcie (patrz otwarte pytania). Rekomendacja: **włącz
   - zmiany UI zostały sprawdzone w przeglądarce;
   - dziennik i specyfikacja są zaktualizowane;
   - wnioski z poprawek trafiły do `.ai/lessons/`.
-- **CI** (GitHub Actions, do dodania) uruchamia `npm ci` → lint → typecheck → test → test:int (Testcontainers) → build → test:e2e → `npm audit --audit-level=high`.
+- **CI** (`.github/workflows/ci.yml`) uruchamia `npm ci` → format → lint → typecheck → test → migracje i `migration:check` → test:int → build → test:e2e → `npm audit --omit=dev --audit-level=high`.
 - **Zależności:** aktualizacje co tydzień (Renovate lub Dependabot), wersje Next i `eslint-config-next` zawsze zgodne, `npm audit` w CI blokuje poziom high i critical.
 - **Hooki:** husky + lint-staged (Prettier + ESLint na zmienionych plikach) w pre-commit, bez `--no-verify`.
 
@@ -278,10 +283,89 @@ Zmiany do naniesienia w [2026-11-16-devmentor-monorepo.md](2026-11-16-devmentor-
 - **Nowa faza 5, jakość:** Vitest (projects), Playwright, Prettier, husky + lint-staged, `env.ts`, ostrzejsze opcje `tsconfig`, `typescript-eslint` type-checked, CI.
 - **Nowa faza 6, auth:** Better Auth, role, `proxy.ts`, autoryzacja w serwisach.
 
-## 12. Otwarte pytania (do decyzji użytkownika)
+## 12. Decyzje użytkownika (2026-11-16)
 
-1. Czy założenia z sekcji 1 (konta, role `user`/`admin`, jedna aplikacja z panelem) są poprawne? Jakie są główne funkcje DevMentor?
-2. `cacheComponents`: włączyć teraz (rekomendacja) czy zostać przy modelu bez Cache Components?
-3. Auth: Better Auth (rekomendacja) czy inne rozwiązanie, np. zewnętrzny dostawca?
-4. Gdzie aplikacja będzie wdrażana (Vercel, kontener, VPS)? Od tego zależą sposób uruchamiania migracji, obsługa env w obrazie i telemetria.
-5. Czy CI ma być na GitHub Actions?
+1. Funkcje produktu nie są jeszcze opisane. Założenia z sekcji 1 zostają roboczymi. Jako pierwszy pionowy wycinek służy profil użytkownika (`UserProfile`), który wymaga kont i ról, ale nie przesądza o funkcjach mentoringu.
+2. `cacheComponents`: **włączone od teraz**.
+3. Auth: **Better Auth** (email + hasło na start, role `user`/`admin` przez plugin `admin`).
+4. Wdrożenie: **jeszcze nieustalone**. Migracje uruchamia osobny krok (`npm run db:migrate`), env jest walidowane przy starcie, bez Dockerfile i `output: "standalone"`.
+5. CI: **GitHub Actions**.
+
+## 13. Plan wdrożenia
+
+### Faza 0: bezpieczeństwo zależności
+
+Status: done (2026-11-16)
+
+- `next` i `eslint-config-next` w wersji ≥ 16.4.6, React zgodny z peer deps.
+
+Kryteria ukończenia: `npm audit` nie zgłasza poziomu high ani critical w zależnościach runtime. Lint, typecheck i build przechodzą.
+
+### Faza 1: tooling jakości
+
+Status: done (2026-11-16)
+
+- `tsconfig.base.json` z `noUncheckedIndexedAccess`, `noImplicitOverride`, `verbatimModuleSyntax`.
+- Prettier w katalogu głównym, `format`/`format:check`.
+- typescript-eslint type-checked (`strict` dla `core`/`db`, `recommended` dla `app`/`ui`).
+- Vitest z `projects` i pierwsze testy jednostkowe `core`.
+- `packages/app/src/env.ts` (`@t3-oss/env-nextjs`), a `process.env` czytane tylko tam.
+
+Kryteria ukończenia: `npm run format:check`, `lint`, `typecheck`, `test` i `build` przechodzą.
+
+### Faza 2: dane (MikroORM 7 + PostgreSQL)
+
+Status: done (2026-11-16)
+
+- Konfiguracja `db` (`defineConfig`, `clientUrl`, pula, `Migrator`), ORM per moduł (pierwotnie `globalThis`, zmienione po E2E), `registerDb` (`orm` singleton, `em` scoped, repozytoria scoped).
+- `serverExternalPackages` zweryfikowane buildem.
+- Port `UserProfileRepository` i `UserProfileService` w `core`, `UserProfile` (`defineEntity`) i `MikroOrmUserProfileRepository` w `db`.
+- Migracja początkowa i skrypty `db:migrate`, `db:migration:create`, `db:migration:check`.
+- Testy integracyjne repozytorium na bazie `<db>_test`.
+
+Kryteria ukończenia: migracja wykonuje się na bazie sandboxa. Testy integracyjne i `migration:check` przechodzą.
+
+### Faza 3: UI (Tailwind v4 + shadcn) i Cache Components
+
+Status: done (2026-11-16)
+
+- Grupy tras `(frontend)` i `(backend)` z osobnymi root layoutami i arkuszami, strona startowa w `(frontend)`.
+- `@devmentor/ui`: tokeny i `globals.css`, `cn`, komponenty shadcn, `exports` dla `components/*`, `lib/*`, `hooks/*`, `globals.css` oraz wyjątek w lincie.
+- `cacheComponents: true`, `typedRoutes: true`, nagłówki bezpieczeństwa, `error.tsx`, `global-error.tsx`, `not-found.tsx`.
+
+Kryteria ukończenia: `/` wygląda jak przed zmianą, a `/backend` renderuje komponenty shadcn z `@devmentor/ui`. Build przechodzi z Cache Components.
+
+### Faza 4: auth (Better Auth)
+
+Status: done (2026-11-16)
+
+- Better Auth (email + hasło, plugin `admin`) na tym samym Postgresie, migracje Better Auth jako osobny skrypt.
+- Strony logowania i rejestracji, `proxy.ts` z optymistycznym przekierowaniem.
+- `/account` z formularzem profilu (RHF + Zod + Server Action według 4.2), `/backend` dostępne tylko dla `admin`.
+- Autoryzacja w `UserProfileService`, pokryta testami.
+
+Kryteria ukończenia: rejestracja, logowanie, edycja profilu i blokada panelu dla zwykłego użytkownika działają w uruchomionej aplikacji.
+
+### Faza 5: E2E, hooki, CI i weryfikacja końcowa
+
+Status: done (2026-11-16)
+
+- Playwright na `build` + `start`, ścieżka rejestracja → profil → wylogowanie oraz test blokady panelu i axe.
+- husky + lint-staged.
+- `.github/workflows/ci.yml` (lint, typecheck, test, test:int z usługą Postgres, build, e2e, audit).
+- Pełna weryfikacja od `npm ci`, aktualizacja `README.md` i `AGENTS.md`.
+
+Kryteria ukończenia: wszystkie kroki CI przechodzą lokalnie, a aplikacja działa w serwisie sandboxa.
+
+## 14. Wynik wdrożenia (2026-11-16)
+
+Pełny pipeline CI przeszedł lokalnie na czystej kopii plików z repo i nowej bazie, od `npm ci` po E2E i audit. Odstępstwa od pierwotnej specyfikacji, każde zweryfikowane:
+
+- `serverExternalPackages` niepotrzebne dla MikroORM 7 (sekcja 4.5).
+- ORM per moduł zamiast `globalThis` (sekcja 5, lekcja `mikroorm-orm-per-bundle-layer`).
+- CI używa kontenera usługi GitHub Actions zamiast Testcontainers.
+- `global-not-found.tsx` wymaga eksperymentalnej flagi `experimental.globalNotFound`. Next zaleca ją przy kilku root layoutach.
+- `frame-ancestors 'none'` tylko w produkcji, bo podgląd sandboxa osadza serwer dev w iframe. Pełne CSP z `script-src` i nonce zostaje do zrobienia.
+- `shadcn` jest w `devDependencies` pakietu `ui`. Jego CLI ciągnie `ts-morph` z podatnym `minimatch` (moderate, tylko w czasie developmentu), a w runtime potrzebny jest wyłącznie arkusz `shadcn/tailwind.css`.
+
+Otwarte: funkcje produktu (sekcja 1), miejsce wdrożenia (wtedy `BETTER_AUTH_URL`, uruchamianie migracji, telemetria), pełne CSP, Renovate/Dependabot.

@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+  # Build-time env validation needs these; no job below talks to this database.
+  DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+  BETTER_AUTH_SECRET: ci-only-secret-not-used-outside-github-actions
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format
+        run: npm run format:check
+      - name: ESLint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  unit:
+    name: Unit tests (100% coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Unit tests with coverage thresholds
+        run: npm run test:coverage
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+
+  integration:
+    name: Integration tests (Testcontainers + agent-browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install agent-browser Chrome
+        run: npx agent-browser install --with-deps
+      # Docker is preinstalled on ubuntu-latest; Testcontainers starts a fresh PostgreSQL per suite.
+      - name: Database integration tests
+        run: npm run test:int
+      - name: App integration tests
+        run: npm run test:integration

@@ -4,9 +4,9 @@ Cele:
 - Przenieść aplikację Next.js do monorepo `packages/{app,core,db,ui}` z zachowaniem działania.
 - Wdrożyć stack z `AGENTS.md`: Awilix, PostgreSQL + MikroORM, Tailwind, shadcn-ui (fazy 2–4).
 
-Specyfikacja: [.ai/specs/2026-11-16-devmentor-monorepo.md](../specs/2026-11-16-devmentor-monorepo.md)
+Specyfikacja: [.ai/specs/implemented/2026-11-16-devmentor-monorepo.md](../specs/implemented/2026-11-16-devmentor-monorepo.md)
 
-Status: in-progress
+Status: done
 
 ---
 
@@ -21,3 +21,7 @@ Status: in-progress
 - Pułapka: strict mode odrzuca singleton zależny od zależności scoped, ale nie blokuje pobrania zależności scoped z kontenera głównego. Dlatego w `AGENTS.md` jest reguła, że resolve idzie zawsze przez `getRequestScope()`. Kontener celowo nie trafia do `globalThis`, żeby HMR wczytywał nowe rejestracje.
 - Weryfikacja: typecheck, lint i build przechodzą (`/` nadal statyczna). Testy tymczasowe potwierdziły odrzucenie wycieku zasięgu i błąd builda przy imporcie kontenera w komponencie klienckim. Dev i build zwracają ten sam tytuł i opis.
 - Dalej: faza 3, MikroORM i PostgreSQL w `db`.
+
+## 2026-11-16: zamknięcie migracji
+- Fazy 3–4 (MikroORM, UI) wykonano w zadaniu wdrożenia standardów (`.ai/runs/2026-11-16-devmentor-engineering-standards.md`). Specyfikacja trafiła do `.ai/specs/implemented/`.
+- Dalej: nic w ramach tego zadania.

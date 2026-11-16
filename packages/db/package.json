@@ -4,10 +4,36 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "mikro-orm migration:up",
+    "db:migration:create": "mikro-orm migration:create",
+    "db:migration:check": "mikro-orm migration:check",
+    "db:migration:pending": "mikro-orm migration:pending",
+    "db:create": "mikro-orm database:create"
   },
-  "dependencies": { "@devmentor/core": "*" }
+  "dependencies": {
+    "@devmentor/core": "*",
+    "@mikro-orm/core": "^7.2.10",
+    "@mikro-orm/migrations": "^7.2.10",
+    "@mikro-orm/postgresql": "^7.2.10",
+    "uuid": "^14.0.3"
+  },
+  "devDependencies": {
+    "@mikro-orm/cli": "^7.2.10",
+    "@testcontainers/postgresql": "^12.2.1",
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1",
+    "testcontainers": "^12.2.1",
+    "tsx": "^4.23.15"
+  },
+  "mikro-orm": {
+    "configPaths": [
+      "./mikro-orm.config.ts"
+    ]
+  }
 }

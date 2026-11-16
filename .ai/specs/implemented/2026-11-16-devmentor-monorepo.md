@@ -1,7 +1,8 @@
 # DevMentor — migracja do monorepo i fundament architektury
 
 Data: 2026-11-16
-Dziennik: [.ai/runs/2026-11-16-devmentor-monorepo.md](../runs/2026-11-16-devmentor-monorepo.md)
+Dziennik: [.ai/runs/2026-11-16-devmentor-monorepo.md](../../runs/2026-11-16-devmentor-monorepo.md)
+Status: done (2026-11-16)
 
 ## Cel
 
@@ -24,7 +25,7 @@ Przekształcić jednopakietowy projekt Next.js w monorepo aplikacji DevMentor zg
 
 ## Plan
 
-Fazy 3–4 wymagają korekty według [standardów inżynieryjnych](2026-11-16-devmentor-engineering-standards.md) (sekcja 11): przed fazą 3 aktualizacja Next do ≥ 16.4.6 (podatność krytyczna) i MikroORM 7 zamiast 6. Do tego dochodzą nowe fazy 5 (jakość) i 6 (auth). Korektę naniesiemy po decyzjach z sekcji 12 standardów.
+Fazy 3 i 4 zostały zastąpione planem wdrożenia w [standardach inżynieryjnych](2026-11-16-devmentor-engineering-standards.md) (sekcja 13: fazy 2 i 3 tam). Migracja monorepo kończy się razem z nimi.
 
 ### Faza 1: struktura monorepo i wydzielenie istniejącego kodu
 
@@ -58,20 +59,8 @@ Decyzja: kontener nie trafia do `globalThis`, bo jest tani w budowie, a przy HMR
 
 ### Faza 3: Dane (PostgreSQL + MikroORM)
 
-Status: todo
-
-- `@mikro-orm/core`, `@mikro-orm/postgresql`, `@mikro-orm/migrations` w `db`; konfiguracja z `DATABASE_URL`, ustawienia puli połączeń.
-- Pierwsza encja i migracja, skrypty `db:migrate` / `db:migration:create`.
-- Rejestracja `MikroORM` (singleton, instancja trzymana w `globalThis`, żeby HMR i osobne warstwy bundla Next nie tworzyły kolejnych pul) i `EntityManager` (scoped, `em.fork()`) w kontenerze przez `registerDb`.
-- Połączenie z usługą `postgres` sandboxa. Sprawdzić, czy MikroORM wymaga `serverExternalPackages` w Next 16.
-
-Kryteria ukończenia: migracja wykonuje się na bazie sandboxa, a strona serwerowa odczytuje dane przez serwis z kontenera. Lint, typecheck i build przechodzą.
+Status: done (2026-11-16) w standardach, sekcja 13, faza 2.
 
 ### Faza 4: UI (Tailwind + shadcn-ui)
 
-Status: todo
-
-- Tailwind w `app` dla stron frontendowych (`src/app/(frontend)/`); strona startowa przeniesiona do tej grupy tras.
-- shadcn-ui zainicjalizowane w `ui` (komponenty, `cn`, tokeny), układ panelu `src/app/backend/`.
-
-Kryteria ukończenia: strona frontendowa ostylowana Tailwindem i strona `/backend` z komponentem shadcn-ui z `@devmentor/ui`. Lint, typecheck i build przechodzą.
+Status: done (2026-11-16) w standardach, sekcja 13, faza 3.

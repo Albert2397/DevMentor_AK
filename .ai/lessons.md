@@ -13,3 +13,6 @@ Zasady:
 ## Spis lekcji
 
 - [`next build` pada przy `NODE_ENV=development`](lessons/next-build-node-env.md): błąd `useContext` na `null` przy prerenderowaniu, który nie wynika z dwóch kopii Reacta.
+- [`pkill -f` zabija własną powłokę narzędzia](lessons/pkill-matches-own-shell.md): wzorzec pasuje do `bash -c`, więc kolejne kroki polecenia się nie wykonują. Zabijaj procesy po PID.
+- [MikroORM w Next: nie trzymaj ORM w `globalThis`](lessons/mikroorm-orm-per-bundle-layer.md): każda warstwa bundla ma własne klasy encji, co kończy się `Metadata for entity … not found`.
+- [Testy integracyjne aplikacji: strumieniowanie i procesy potomne](lessons/integration-harness-pitfalls.md): czekaj na elementy z `<Suspense>`, nie na URL; zabijaj grupę procesów `next start`; tryb bez Dockera.

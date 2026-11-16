@@ -1,3 +1,6 @@
+@import "tailwindcss" source(none);
+@source "./";
+
 /* Page-wide basics first. The starter screen's own classes follow; once
    page.tsx is replaced nothing uses them, and the page stays plain and dark. */
 :root {
