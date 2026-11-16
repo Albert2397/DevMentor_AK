@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
+import styles from "./Backdrop.module.css";
+
 // The dune field from the sign-in panel and the Custom workspace page, held
 // still: dotted horizontal lines on layered value noise, pushed around by a few
 // invisible points, fading out before they reach the copy. The Sandboxes mark
 // surfaces in the same grains beside the copy, bottom right, where there is
-// room for it. Delete this file and its <Backdrop /> once your app has its own
-// background.
+// room for it.
 
 const MARK_PATH =
   "M382.985 5.30048C392.343 0.196502 403.66 0.241892 413.101 5.3856L559.238 85.4022L561.435 86.844C569.651 93.1354 568.897 106.496 559.453 111.657L559.442 111.663L414.994 190.785C399.4 199.346 389.747 215.776 389.74 233.579V403.887C389.74 403.937 389.744 403.986 389.745 404.036C389.745 404.096 389.738 404.157 389.74 404.217C389.997 417.104 395.559 428.909 405.201 435.437C415.064 442.115 427.735 442.267 439.635 434.665C439.778 434.597 439.925 434.535 440.066 434.458L593.232 350.61C597.39 348.368 602.418 348.236 606.719 350.232L607.572 350.663L786.526 448.602L786.537 448.607C791.383 451.254 794.5 456.443 794.5 462.208V672.857C794.5 673.38 794.467 673.756 794.434 674.018C794.054 674.214 793.448 674.503 792.341 674.977C790.876 675.604 788.817 676.47 786.537 677.718L786.526 677.723C659.332 747.351 531.36 818.455 404.244 888.082L404.211 888.099C400.4 890.207 395.791 890.235 391.837 888.077L391.794 888.05L391.746 888.028L19.1771 690.888L19.0372 690.812L17.0797 689.738C7.5246 684.022 1.5011 673.489 1.5 661.905V472.213C1.5 460.23 7.99103 449.304 18.2413 443.675L178.647 355.979L178.663 355.974C194.256 347.413 203.944 330.967 203.945 313.148V121.714C203.945 109.674 210.474 98.7495 220.799 93.1071L220.804 93.1125L382.958 5.31111L382.985 5.30048ZM410.24 448.128C401.675 445.732 392.969 446.629 386.588 447.979C380.102 449.352 375.232 451.369 373.961 451.922L373.557 452.098L373.176 452.316C373.027 452.401 372.895 452.478 372.789 452.545C372.75 452.57 372.71 452.592 372.676 452.614L212.679 540.239C197.082 548.805 187.426 565.228 187.424 583.041C187.424 639.193 187.079 759.627 187.074 761.164V761.208C187.087 767.403 189.302 778.563 202.041 784.873L202.084 784.894C213.141 790.294 224.268 784.894 229.544 781.658L229.549 781.663C230.467 781.151 343.288 718.438 391.848 691.836L391.88 691.82C395.69 689.711 400.301 689.684 404.254 691.836L561.754 778.132C561.892 778.208 562.035 778.263 562.173 778.328C568.98 782.175 575.66 783.805 582.02 783.096C588.546 782.366 593.799 779.277 597.731 775.37C605.237 767.894 608.674 756.761 608.674 748.762V572.977C608.674 561.414 602.445 550.663 592.202 545.062L440.006 461.714C439.424 461.394 438.85 461.026 438.281 460.612L437.947 460.367L437.592 460.16L435.505 458.968C430.027 455.892 420.411 450.977 410.24 448.128ZM372.359 452.838C372.327 452.86 372.294 452.881 372.289 452.886C372.293 452.882 372.301 452.876 372.31 452.87C372.323 452.861 372.343 452.845 372.369 452.827L372.359 452.838Z"
@@ -77,8 +78,8 @@ function fbm(x: number, y: number, z: number) {
 
 // Beside the copy, bottom right, bleeding off the page. Left out where the copy
 // runs close to the edge, as it does in a narrow pane.
-function markRect(width: number, height: number) {
-  const copy = document.querySelector(".starter main")?.getBoundingClientRect()
+function markRect(contentSelector: string, width: number, height: number) {
+  const copy = document.querySelector(contentSelector)?.getBoundingClientRect()
   if (!copy) return null
   const left = copy.right + 40
   const room = width - left
@@ -87,7 +88,12 @@ function markRect(width: number, height: number) {
   return { x: left, y: height - h * 0.8, h }
 }
 
-export default function Backdrop() {
+export type BackdropProps = {
+  /** CSS selector of the copy the mark is placed beside and kept clear of. */
+  contentSelector: string
+}
+
+export function Backdrop({ contentSelector }: BackdropProps) {
   const duneRef = useRef<HTMLCanvasElement>(null)
   const markRef = useRef<HTMLCanvasElement>(null)
 
@@ -106,7 +112,7 @@ export default function Backdrop() {
     const field = new Float32Array(FIELD_COLS * FIELD_ROWS)
 
     const renderMask = () => {
-      const place = markRect(w, h)
+      const place = markRect(contentSelector, w, h)
       if (!place) {
         mask = new Uint8Array(0)
         return
@@ -234,13 +240,13 @@ export default function Backdrop() {
     })
     observer.observe(canvas)
     return () => observer.disconnect()
-  }, [])
+  }, [contentSelector])
 
   return (
-    <div className="backdrop" aria-hidden="true">
-      <canvas ref={duneRef} className="dune" />
-      <div className="vignette" />
-      <canvas ref={markRef} className="mark-field" />
+    <div className={styles.backdrop} aria-hidden="true">
+      <canvas ref={duneRef} className={styles.dune} />
+      <div className={styles.vignette} />
+      <canvas ref={markRef} className={styles.markField} />
     </div>
   )
 }

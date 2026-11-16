@@ -9,10 +9,12 @@
     "dev": "npm run dev -w @devmentor/app --",
     "build": "npm run build -w @devmentor/app",
     "start": "npm run start -w @devmentor/app --",
-    "lint": "npm run lint --workspaces --if-present",
+    "lint": "eslint",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
     "typescript": "^5"
   }
 }

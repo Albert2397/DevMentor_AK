@@ -22,6 +22,8 @@ Poniższe założenia są wiążące dla każdego agenta. Nie wprowadzaj alterna
 
 Stan integracji (co już jest zainstalowane, a co nie) opisuje `.ai/specs/2026-11-16-devmentor-monorepo.md`. Sprawdź go, zanim założysz, że dana biblioteka jest skonfigurowana.
 
+Wersje, wzorce projektowe, coding standards, testy i Definition of Done opisuje `.ai/specs/2026-11-16-devmentor-engineering-standards.md`. Stosuj je przy każdej zmianie kodu. Dopóki ma status `proposed`, decyzje z jego sekcji „Otwarte pytania” nie są przesądzone: nie wdrażaj ich bez potwierdzenia użytkownika.
+
 ## Monorepo — `packages/`
 
 | Pakiet | Nazwa | Odpowiedzialność |
@@ -33,7 +35,7 @@ Stan integracji (co już jest zainstalowane, a co nie) opisuje `.ai/specs/2026-1
 
 Zasady:
 
-- Dozwolony kierunek zależności: `app` → `ui`, `db`, `core`; `db` → `core`; `ui` → `core`. `core` nie zależy od żadnego innego pakietu. Bez cykli. `ui` nigdy nie importuje `db`.
+- Dozwolony kierunek zależności: `app` → `ui`, `db`, `core`; `db` → `core`; `ui` → `core`. `core` nie zależy od żadnego innego pakietu. Bez cykli. `ui` nigdy nie importuje `db`. Te granice wymusza `eslint.config.mjs` w katalogu głównym; nie wyłączaj tej reguły, tylko popraw import.
 - Między pakietami importuj tylko przez publiczny punkt wejścia `@devmentor/<pakiet>` (`src/index.ts`). Nie używaj ścieżek względnych do innych pakietów ani głębokich importów.
 - Pakiety wewnętrzne eksportują źródła TS (`"exports": { ".": "./src/index.ts" }`). Next/Turbopack transpiluje je sam, więc nie dodawaj kroku budowania ani `transpilePackages`.
 - Nowy pakiet: `packages/<nazwa>`, nazwa `@devmentor/<nazwa>`, `tsconfig.json` rozszerzający `../../tsconfig.base.json`. Przed dodaniem nowego pakietu zapytaj użytkownika.
@@ -50,9 +52,10 @@ Zasady:
 
 ## Dependency Injection — Awilix
 
-- Kontener tworzy jeden composition root w `packages/app`. Pakiety eksportują fabryki lub klasy i funkcje rejestrujące, a nie gotowe singletony.
-- Serwisy dostają zależności przez konstruktor lub fabrykę. Nie importują bezpośrednio implementacji swoich zależności.
-- `resolve` wywołuj tylko na brzegach aplikacji (strona, Server Action, Route Handler), nie w logice domenowej. Kontener nie może służyć za service locator.
+- Composition root to `packages/app/src/server/container.ts` (oznaczony `server-only`). Tylko tam rejestrujesz zależności. Kontener twórz przez `createDiContainer()` z `@devmentor/core` (tryb PROXY, `strict: true`), a nie przez bezpośredni import `awilix` w `app`.
+- Pakiety eksportują klasy lub fabryki i funkcję `register<Pakiet>(container, config)` (np. `registerCore`) oraz typ swojego cradle (np. `CoreCradle`). `AppCradle` w `app` je łączy. Nie eksportują gotowych singletonów.
+- Serwisy przyjmują jeden obiekt z zależnościami w konstruktorze (`constructor({ appConfig }: { appConfig: AppConfig })`). Nie importują bezpośrednio implementacji swoich zależności.
+- `resolve` wywołuj tylko na brzegach aplikacji (strona, layout, `generateMetadata`, Server Action, Route Handler) i zawsze przez `getRequestScope()`. Nie rozwiązuj zależności z `getContainer()`, bo Awilix pozwala wtedy pobrać zależność `scoped` z kontenera głównego i staje się ona współdzielona między żądaniami. Nie wywołuj `resolve` w logice domenowej; kontener nie może służyć za service locator.
 - Zasięgi: `singleton` dla ORM i konfiguracji, `scoped` (per żądanie) dla `EntityManager` i serwisów, które z niego korzystają.
 
 ## UI — Tailwind i shadcn-ui

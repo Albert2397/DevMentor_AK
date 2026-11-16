@@ -9,5 +9,13 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "@devmentor/core": "*" }
+  "dependencies": {
+    "@devmentor/core": "*"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19"
+  }
 }

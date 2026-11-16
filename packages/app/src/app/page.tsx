@@ -1,9 +1,9 @@
-import Backdrop from "./backdrop";
+import { Backdrop } from "@devmentor/ui";
 
 export default function Home() {
   return (
     <div className="starter">
-      <Backdrop />
+      <Backdrop contentSelector=".starter main" />
       <main>
         <svg className="framework-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="10.4" stroke="currentColor" strokeWidth="1.3" />
@@ -19,7 +19,7 @@ export default function Home() {
           Describe what you want in the AI Coding Agent tab, and this page turns into it.
         </p>
         <p className="aside">
-          Prefer to write the code yourself? Start in <code>src/app/page.tsx</code>.
+          Prefer to write the code yourself? Start in <code>packages/app/src/app/page.tsx</code>.
         </p>
       </main>
       <ul className="stack" aria-label="What this workspace runs">

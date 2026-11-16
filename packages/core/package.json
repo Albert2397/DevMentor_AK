@@ -9,5 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {}
+  "dependencies": {
+    "awilix": "^13.0.7"
+  }
 }
